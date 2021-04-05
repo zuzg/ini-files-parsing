@@ -6,12 +6,7 @@
 #include <stdbool.h>
 #define STRSTEP 10
 
-
-/// sa 2 funkcje do usuwania list i tu dzialaja, ale jednak valgrindowi sie nie podoba
-
-
-
-/*przykladowe inputy:
+/*sample inputs
 
 NORMAL
 example-4.5.ini fumbling-lavish-upset-gummy-safe-straight-factor.peppery-personal-light-dead-haunting-town
@@ -419,9 +414,6 @@ int main ()
     }
 
     //printList(DATA);
-    printf("\nWIELKANOCNY B4 przed party :D :-P ;))");
-
-
 
     return 0;
 }
