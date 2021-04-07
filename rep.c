@@ -1,13 +1,14 @@
-#include <stdio.h> //
-#include <string.h> //eg. strtok
+#include <stdio.h> 
+#include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <ctype.h> //isalnum
+#include <ctype.h>
 #include <stdbool.h>
 #define STRSTEP 10
-#pragma warning(disable : 4996)
+#pragma warning(disable : 4996) // needed in VS
 
-/*przykladowe inputy:
+
+/*sample inputs:
 
 NORMAL
 example-4.5.ini fumbling-lavish-upset-gummy-safe-straight-factor.peppery-personal-light-dead-haunting-town
@@ -41,33 +42,32 @@ char* getlongline(FILE* f)
     long_line = (char*)malloc(sizeof(char)); //1
     *long_line = getc(f);
 
-    if (*long_line == '\n' || *long_line == EOF || *long_line == ';') return "empty";
+    if (*long_line == '\n' || *long_line == EOF || *long_line == ';') {
+        free(long_line);
+        return "empty";
+    }
 
     do {
-        if (long_line != NULL)
-        {
-            tmp = (char*)realloc(long_line, size);
+        if (long_line != NULL){
+            tmp = (char*)realloc(long_line, last + size);
             if (tmp != NULL)
-            {
                 long_line = tmp;
-            }
         }
         fgets(long_line + last, STRSTEP, f);
         last = strlen(long_line);
         size += STRSTEP;
     } while (!feof(f) && long_line[last - 1] != '\n' && long_line);
-
+    
     long_line[last - 1] = '\0';
     return long_line;
 }
 
 char* getSectionName(char* line)
 {
-    char* name = (char*)calloc(1, strlen(line)); //sizeof(char)
+    char* name = (char*)calloc(1, strlen(line));
     for (size_t i = 0; i < strlen(line) - 2; i++)
-    {
         name[i] = line[i + 1];
-    }
+
     name[strlen(line) - 2] = '\0';
     return name;
 }
@@ -78,32 +78,28 @@ void Insert_Section(struct Section** head_ref, char* sect_name, struct string_ar
 
     if (new_node)
     {
-        //new_node->Sname = sect_name;
-
         new_node->Sname = malloc(strlen(sect_name) + 1);
         strcpy(new_node->Sname, sect_name);
         new_node->Skey = keys;
         new_node->Svalue = values;
 
         struct Section* current = *head_ref;
-        /* Special case for the head end */
+        //special case for the head end
         if (*head_ref == NULL) {
             *head_ref = new_node;
         }
 
         else {
-            /* Locate the node before the point of insertion */
+            //locate the node before the point of insertion
             while (current->next != NULL) { current = current->next; }
             current->next = new_node;
         }
     }
 }
 
-void Insert_Key_or_Value(struct string_arr** head_ref, char* x)
-{
+void Insert_Key_or_Value(struct string_arr** head_ref, char* x){
     struct string_arr* new_node = calloc(1, sizeof(struct string_arr));
-    if (new_node)
-    {
+    if (new_node){
         new_node->Name = malloc(strlen(x) + 1);
         strcpy(new_node->Name, x);
 
@@ -129,8 +125,7 @@ void printList(struct Section* head) {
         temp_key = n->Skey;
         temp_val = n->Svalue;
 
-        while (temp_key != NULL && temp_val != NULL)
-        {
+        while (temp_key != NULL && temp_val != NULL){
             printf("k: (%s) v: (%s)\n", temp_key->Name, temp_val->Name);
             temp_key = temp_key->next;
             temp_val = temp_val->next;
@@ -140,43 +135,32 @@ void printList(struct Section* head) {
 }
 
 void deleteArr(struct string_arr** head_ref) {
-    /* deref head_ref to get the real head */
     struct string_arr* current = *head_ref;
     struct string_arr* next;
 
     while (current != NULL) {
         next = current->next;
-        //printf("before: %s ", current->Name);
         free(current->Name);
-        //printf("after: %s\n", current->Name);
         free(current);
         current = next;
     }
 
-    /* deref head_ref to affect the real head back
-       in the caller. */
     *head_ref = NULL;
 }
 
 void deleteList(struct Section** head_ref) {
-    /* deref head_ref to get the real head */
     struct Section* current = *head_ref;
     struct Section* next;
 
     while (current != NULL) {
         next = current->next;
-        //printf("before: %s ", current->Skey);
+        deleteArr(&current->Svalue);
         deleteArr(&current->Skey);
-        //printf("after: %s\n", current->Skey);
         free(current->Sname);
-
-        //deleteArr(&current->Svalue);
         free(current);
         current = next;
     }
 
-    /* deref head_ref to affect the real head back
-       in the caller. */
     *head_ref = NULL;
 }
 
@@ -189,8 +173,6 @@ struct Section* DATA_READER(char* fname)
     }
 
     struct Section* head = NULL;
-    //struct Section* new_sect = NULL;
-
     struct string_arr* root_key = NULL;
     struct string_arr* root_value = NULL;
 
@@ -199,45 +181,38 @@ struct Section* DATA_READER(char* fname)
     char* temp_key;
     char* temp_value;
 
-    bool po_sekcji = false; //sekcja dopiero sie zaczyna
+    bool after_section = false; //beginning of section
 
-    while (!feof(fp))
-    {
+    while (!feof(fp)){
         line = getlongline(fp);
-        if (strcmp(line, "empty")) //linia nie jest pusta
-        {
-            if (line[0] == '[')
-            {
-                if (po_sekcji)
-                {
+        //the line is not empty
+        if (strcmp(line, "empty")){
+            if (line[0] == '['){
+                if (after_section){
                     Insert_Section(&head, tempSect, root_key, root_value);
                     free(tempSect);
                     root_key = NULL;
                     root_value = NULL;
                 }
                 tempSect = getSectionName(line);
-                //printf("SEKCJA *%s*\n", tempSect);
 
             }
 
-            else
-            {
+            else{
                 temp_key = strtok(line, " ");
-                temp_value = strtok(NULL, " "); //nie wiem jak to zrobic ladniej xd ale dziala tak
+                temp_value = strtok(NULL, " ");
                 temp_value = strtok(NULL, "\0");
 
                 Insert_Key_or_Value(&root_key, temp_key);
                 Insert_Key_or_Value(&root_value, temp_value);
 
-                po_sekcji = true;
-                //printf ("%s (%s) (%s)\n", tempSect, temp_key, temp_value);
-
+                after_section = true;
             }
-        }
-        //free(line);
+            free(line);
+        }  
     }
 
-    //ostatnia sekcja
+    //last section
     Insert_Section(&head, tempSect, root_key, root_value);
     root_key = NULL;
     root_value = NULL;
@@ -250,40 +225,36 @@ struct Section* DATA_READER(char* fname)
 struct Section* Find_Section(struct Section* head, char* name) {
     struct Section* current = head;
     while (current != NULL) {
-        if (!strcmp(current->Sname, name)) {
+        if (!strcmp(current->Sname, name))
             return current;
-        }
+
         current = current->next;
     }
     return NULL;
 }
 
-char* Find_Value(struct Section* head, char* key)
-{
+char* Find_Value(struct Section* head, char* key){
     struct string_arr* temp_key = head->Skey;
     struct string_arr* temp_val = head->Svalue;
 
     while (temp_key != NULL && temp_val != NULL) {
-        if (!strcmp(temp_key->Name, key)) {
+        if (!strcmp(temp_key->Name, key))
             return temp_val->Name;
-        }
+        
         temp_key = temp_key->next;
         temp_val = temp_val->next;
     }
     return "failed";
 }
 
-bool Chars_Digits(char* word) //or hyphen
-{
+bool Chars_Digits(char* word){
     for (size_t i = 0; i < strlen(word); i++)
-    {
         if (!isalnum(word[i]) && word[i] != '-')return false;
-    }
+    
     return true;
 }
 
-int Identifier_checker(struct Section* head)
-{
+int Identifier_checker(struct Section* head){
     struct Section* n = head;
     struct string_arr* temp_key;
     struct string_arr* temp_val;
@@ -291,9 +262,11 @@ int Identifier_checker(struct Section* head)
     while (n != NULL) {
         temp_key = n->Skey;
         temp_val = n->Svalue;
-        if (!Chars_Digits(n->Sname)) { printf("section name: %s\n", n->Sname); invalid++; }
-        while (temp_key != NULL && temp_val != NULL)
-        {
+        if (!Chars_Digits(n->Sname)) { 
+            printf("section name: %s\n", n->Sname); 
+            invalid++; 
+        }
+        while (temp_key != NULL && temp_val != NULL){
             if (!Chars_Digits(temp_key->Name)) { printf("key: %s\n", temp_key->Name); invalid++; }
             if (!Chars_Digits(temp_val->Name)) { printf("value: %s\n", temp_val->Name); invalid++; }
             temp_key = temp_key->next;
@@ -347,8 +320,7 @@ void expression(char* val1, char* val2, char op) {
     else {
         if (op == '+') {
             char* result = malloc(strlen(val1) + strlen(val2) + 1); // +1 for the null-terminator
-            if (result)
-            {
+            if (result){
                 strcpy(result, val1);
                 strcat(result, val2);
                 printf("Concatened string: %s\n", result);
@@ -361,12 +333,11 @@ void expression(char* val1, char* val2, char op) {
     }
 }
 
-int main()
-{
+int main(){
     char* input = getlongline(stdin);
     printf("\n");
 
-    /// jesli mamy "expression" w inpucie to robimy wersje na 5
+    /// "expression" - 2 sections version (grade 5)
     if (strstr(input, "expression") && strstr(input, "\"")) {
         char* filename = strtok(input, " ");
         char* section1 = strtok(NULL, "\"");
@@ -375,12 +346,8 @@ int main()
         char* op = strtok(NULL, " ");
         char* section2 = strtok(NULL, ".");
         char* key2 = strtok(NULL, "\"");
-        //printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n", filename, skip, section1, key1, op, section2, key2);
 
-        //char op = oper[0];
-        //printf("%c", op[0]);
         struct Section* DATA = DATA_READER(filename);
-        //printList(DATA);
         if (DATA == NULL) return -1;
 
         struct Section* searched_section1 = Find_Section(DATA, section1);
@@ -413,12 +380,8 @@ int main()
         (invalid == 0) ? printf("\n\nAll identifiers are correct!\n") : printf("SUMMARY: Found %d invalid identifier(s)\n", invalid);
 
         deleteList(&DATA);
-        //test czy cos zostalo w liscie
-        printf("[");
-        printList(DATA);
-        printf("]");
     }
-    /// to pozostaje bez zmian - wersja dla 1 szukanej sekcji
+    /// when looking for 1 section
     else {
         char* filename = strtok(input, " ");
         char* section = strtok(NULL, ".");
@@ -443,11 +406,6 @@ int main()
         (invalid == 0) ? printf("\n\nAll identifiers are correct!\n") : printf("SUMMARY: Found %d invalid identifier(s)\n", invalid);
 
         deleteList(&DATA);
-        //deleteList(&searched_section);
-        //test czy data jest usunieta
-        printf("[");
-        printList(DATA);
-        printf("]");
     }
 
     free(input);
