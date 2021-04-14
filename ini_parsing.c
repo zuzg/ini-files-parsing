@@ -5,10 +5,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #define STRSTEP 10
-#pragma warning(disable : 4996) // needed in VS
-
-/// Agata Zywot 148258
-/// Zuzanna Gawrysiak 148255
+//#pragma warning(disable : 4996) // needed in VS
 
 /*sample inputs:
 
@@ -35,8 +32,7 @@ struct Section {
     struct Section* next;
 };
 
-char* getlongline(FILE* f)
-{
+char* getlongline(FILE* f){
     size_t size = STRSTEP;
     size_t last = 1; //at the beginning there is only 1 char stored in long_line
 
@@ -64,8 +60,7 @@ char* getlongline(FILE* f)
     return long_line;
 }
 
-char* getSectionName(char* line)
-{
+char* getSectionName(char* line){
     char* name = (char*)calloc(1, strlen(line));
     for (size_t i = 0; i < strlen(line) - 2; i++)
         name[i] = line[i + 1];
@@ -99,8 +94,7 @@ void Insert_Section(struct Section** head_ref, char* sect_name, struct string_ar
     }
 }
 
-void Insert_Key_or_Value(struct string_arr** head_ref, char* x)
-{
+void Insert_Key_or_Value(struct string_arr** head_ref, char* x){
     struct string_arr* new_node = calloc(1, sizeof(struct string_arr));
     if (new_node)
     {
@@ -169,8 +163,7 @@ void deleteList(struct Section** head_ref) {
     *head_ref = NULL;
 }
 
-struct Section* DATA_READER(char* fname)
-{
+struct Section* DATA_READER(char* fname){
     FILE* fp;
     if (NULL == (fp = fopen(fname, "r"))) {
         perror("File does not open");
@@ -200,7 +193,6 @@ struct Section* DATA_READER(char* fname)
                     root_value = NULL;
                 }
                 tempSect = getSectionName(line);
-
             }
 
             else{
@@ -254,8 +246,8 @@ char* Find_Value(struct Section* head, char* key){
 
 bool Chars_Digits(char* word){
     for (size_t i = 0; i < strlen(word); i++)
-        if (!isalnum(word[i]) && word[i] != '-')return false;
-
+        if (!isalnum(word[i]) && word[i] != '-')
+            return false;
     return true;
 }
 
@@ -342,7 +334,7 @@ int main(){
     char* input = getlongline(stdin);
     printf("\n");
 
-    /// "expression" - 2 sections version (grade 5)
+    /// "expression" - 2 sections version
     if (strstr(input, "expression") && strstr(input, "\"")) {
         char* filename = strtok(input, " ");
         char* section1 = strtok(NULL, "\"");
